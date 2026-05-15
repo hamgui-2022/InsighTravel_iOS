@@ -25,17 +25,16 @@ func chatItems(from response: ChatResponse) -> [ChatItem] {
         items.append(.plannerSummary(planner, id: UUID()))
     }
 
-    switch response.plan?.intent {
-    case "stay_search":
+    // planner LLM이 intent를 일정형(itinerary_planner)으로 묶어버려도, 백엔드 라우터는 plan.tools[0]만 실행한다.
+    // 따라서 실제로 실행된 도구를 기준으로 카드 종류를 정한다.
+    if planSignalsHotelSearch(response.plan) {
         if let hotelCard = hotelSearchCardFrom(response: response) {
             items.append(.hotelSearch(hotelCard, id: UUID()))
         }
-    case "flight_search":
+    } else if planSignalsFlightSearch(response.plan) {
         if let flightCard = flightSearchCardFrom(response: response) {
             items.append(.flightSearch(flightCard, id: UUID()))
         }
-    default:
-        break
     }
 
     return items
@@ -195,30 +194,40 @@ func plannerSummaryFrom(_ payload: PlannerPayload?) -> PlannerSummaryData? {
 
 // MARK: - Hotel & flight search cards
 
+func planSignalsHotelSearch(_ plan: PlannerPayload?) -> Bool {
+    guard let plan else { return false }
+    if plan.intent == "stay_search" { return true }
+    return plan.tools?.first == "stay_search"
+}
+
+func planSignalsFlightSearch(_ plan: PlannerPayload?) -> Bool {
+    guard let plan else { return false }
+    if plan.intent == "flight_search" { return true }
+    return plan.tools?.first == "flight_search"
+}
+
 func hotelSearchCardFrom(response: ChatResponse) -> HotelSearchCardData? {
-    guard response.plan?.intent == "stay_search" else { return nil }
+    guard planSignalsHotelSearch(response.plan) else { return nil }
 
     let destination = response.tripGoal?.destination ?? "숙소 목적지"
     let month = response.tripGoal?.month ?? "일정 미정"
 
     return HotelSearchCardData(
         title: "\(destination) 숙소 탐색",
-        subtitle: "\(month) 기준 숙소 후보예요. 예약을 진행하려면 채팅에 \"예약할게\"라고 말씀해주세요.",
-        buttonTitle: "호텔 결과 보기",
-        isInteractive: false
+        subtitle: "\(month) 기준으로 숙소 후보를 비교해볼 수 있어요.",
+        buttonTitle: "호텔 결과 보기"
     )
 }
 
 func flightSearchCardFrom(response: ChatResponse) -> FlightSearchCardData? {
-    guard response.plan?.intent == "flight_search" else { return nil }
+    guard planSignalsFlightSearch(response.plan) else { return nil }
 
     let destination = response.tripGoal?.destination ?? "항공 목적지"
 
     return FlightSearchCardData(
         title: "\(destination) 항공권 탐색",
-        subtitle: "조건에 맞는 항공편 후보예요. 예약을 진행하려면 채팅에 \"예약할게\"라고 말씀해주세요.",
-        buttonTitle: "항공권 보기",
-        isInteractive: false
+        subtitle: "조건에 맞는 항공편 후보를 확인할 수 있어요.",
+        buttonTitle: "항공권 보기"
     )
 }
 

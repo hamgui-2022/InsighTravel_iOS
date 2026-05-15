@@ -156,8 +156,7 @@ struct FlightResultsSummaryData: Hashable {
     let airlineText: String
     let priceText: String
     let priceCaptionText: String
-    let buttonTitle: String?
-    let footerHintText: String?
+    let buttonTitle: String
 }
 
 struct FlightResultsSummaryCard: View {
@@ -189,28 +188,19 @@ struct FlightResultsSummaryCard: View {
 
                 cheapestOptionBox
 
-                if let buttonTitle = data.buttonTitle {
-                    Button(action: onTapCTA) {
-                        HStack(spacing: 8) {
-                            Spacer(minLength: 0)
-                            Text(buttonTitle)
-                                .font(.system(size: 16, weight: .semibold))
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 14, weight: .semibold))
-                            Spacer(minLength: 0)
-                        }
-                        .foregroundStyle(Color.white)
-                        .frame(height: 50)
-                        .background(Color.outgoingBubble)
-                        .clipShape(Capsule())
+                Button(action: onTapCTA) {
+                    HStack(spacing: 8) {
+                        Spacer(minLength: 0)
+                        Text(data.buttonTitle)
+                            .font(.system(size: 16, weight: .semibold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 14, weight: .semibold))
+                        Spacer(minLength: 0)
                     }
-                } else if let hint = data.footerHintText {
-                    Text(hint)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
+                    .foregroundStyle(Color.white)
+                    .frame(height: 50)
+                    .background(Color.outgoingBubble)
+                    .clipShape(Capsule())
                 }
             }
             .padding(16)

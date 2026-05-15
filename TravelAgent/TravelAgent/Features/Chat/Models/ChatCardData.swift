@@ -23,12 +23,10 @@ struct HotelSearchCardData: Hashable {
     let title: String
     let subtitle: String
     let buttonTitle: String
-    let isInteractive: Bool
 }
 
 struct FlightSearchCardData: Hashable {
     let title: String
     let subtitle: String
     let buttonTitle: String
-    let isInteractive: Bool
 }
