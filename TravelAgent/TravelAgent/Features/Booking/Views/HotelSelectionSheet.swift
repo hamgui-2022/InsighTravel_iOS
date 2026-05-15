@@ -1,0 +1,250 @@
+import SwiftUI
+
+struct HotelOption: Identifiable, Hashable {
+    let id: UUID
+    let imageName: String
+    let sourceText: String
+    let hotelName: String
+    let ratingText: String
+    let reviewCountText: String
+    let locationText: String
+    let stayPriceLabel: String
+    let priceText: String
+    let priceSuffixText: String
+}
+
+struct HotelSelectionSheet: View {
+    let title: String
+    let options: [HotelOption]
+    let onClose: () -> Void
+    let onContinue: (HotelOption) -> Void
+
+    @State private var selectedOptionID: UUID
+
+    init(
+        title: String = "호텔 선택",
+        options: [HotelOption],
+        onClose: @escaping () -> Void = {},
+        onContinue: @escaping (HotelOption) -> Void = { _ in }
+    ) {
+        self.title = title
+        self.options = options
+        self.onClose = onClose
+        self.onContinue = onContinue
+        _selectedOptionID = State(initialValue: options.first?.id ?? UUID())
+    }
+
+    private var selectedOption: HotelOption? {
+        options.first(where: { $0.id == selectedOptionID })
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            dragHandle
+            header
+
+            ScrollView {
+                VStack(spacing: 16) {
+                    ForEach(options) { option in
+                        HotelOptionCard(
+                            option: option,
+                            isSelected: option.id == selectedOptionID
+                        )
+                        .onTapGesture {
+                            selectedOptionID = option.id
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+            }
+
+            bottomCTA
+        }
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .shadow(color: Color.black.opacity(0.12), radius: 18, x: 0, y: -2)
+        .ignoresSafeArea(edges: .bottom)
+    }
+
+    private var dragHandle: some View {
+        Capsule()
+            .fill(Color.gray.opacity(0.3))
+            .frame(width: 44, height: 5)
+            .padding(.top, 10)
+            .padding(.bottom, 12)
+            .frame(maxWidth: .infinity)
+    }
+
+    private var header: some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(Color.primary)
+
+            Spacer(minLength: 0)
+
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.secondary)
+                    .frame(width: 32, height: 32)
+                    .background(Color.gray.opacity(0.15))
+                    .clipShape(Circle())
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 8)
+    }
+
+    private var bottomCTA: some View {
+        VStack(spacing: 12) {
+            Divider()
+
+            HStack {
+                Text(selectedOption?.summaryText ?? "호텔을 선택하세요")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.secondary)
+                Spacer(minLength: 0)
+            }
+
+            Button(action: continueAction) {
+                HStack(spacing: 8) {
+                    Spacer(minLength: 0)
+                    Text("이 호텔로 진행하기")
+                        .font(.system(size: 16, weight: .semibold))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 14, weight: .semibold))
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(Color.white)
+                .frame(height: 54)
+                .background(Color.outgoingBubble)
+                .clipShape(Capsule())
+            }
+            .disabled(selectedOption == nil)
+            .opacity(selectedOption == nil ? 0.6 : 1.0)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 10)
+        .padding(.bottom, 20)
+        .background(Color.white)
+        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: -2)
+    }
+
+    private func continueAction() {
+        guard let option = selectedOption else { return }
+        onContinue(option)
+    }
+}
+
+struct HotelOptionCard: View {
+    let option: HotelOption
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            imageSection
+
+            sourceBadge
+
+            Text(option.hotelName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Color.primary)
+
+            metaRow
+
+            Divider()
+
+            priceRow
+        }
+        .padding(16)
+        .background(Color(white: 0.98))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(isSelected ? Color.outgoingBubble : Color.clear, lineWidth: 1.5)
+        )
+        .shadow(color: isSelected ? Color.outgoingBubble.opacity(0.18) : Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+    }
+
+    private var imageSection: some View {
+        ZStack(alignment: .topTrailing) {
+            Image(option.imageName)
+                .resizable()
+                .scaledToFill()
+                .frame(height: 200)
+                .clipped()
+
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Color.outgoingBubble)
+                    .padding(10)
+                    .background(Color.white.opacity(0.9))
+                    .clipShape(Circle())
+                    .padding(10)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private var sourceBadge: some View {
+        Text(option.sourceText)
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.outgoingBubble)
+            .clipShape(Capsule())
+    }
+
+    private var metaRow: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.outgoingBubble)
+                Text("\(option.ratingText) (\(option.reviewCountText))")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.secondary)
+            }
+
+            HStack(spacing: 4) {
+                Image(systemName: "mappin.and.ellipse")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.secondary)
+                Text(option.locationText)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.secondary)
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var priceRow: some View {
+        HStack {
+            Text(option.stayPriceLabel)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.secondary)
+
+            Spacer(minLength: 0)
+
+            HStack(spacing: 4) {
+                Text(option.priceText)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(Color.primary)
+                Text(option.priceSuffixText)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.secondary)
+            }
+        }
+    }
+}
+
+private extension HotelOption {
+    var summaryText: String {
+        "선택한 호텔: \(hotelName)"
+    }
+}

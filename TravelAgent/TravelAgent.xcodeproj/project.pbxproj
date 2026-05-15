@@ -6,15 +6,8 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		65E9158F2F88020700C5B1BE /* ChatAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E9158E2F88020600C5B1BE /* ChatAPIService.swift */; };
-		65E915912F88021E00C5B1BE /* BookingAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E915902F88021E00C5B1BE /* BookingAPIService.swift */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
 		65D5A6352F6907040006BE42 /* TravelAgent.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TravelAgent.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		65E9158E2F88020600C5B1BE /* ChatAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatAPIService.swift; sourceTree = "<group>"; };
-		65E915902F88021E00C5B1BE /* BookingAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingAPIService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -41,8 +34,6 @@
 			children = (
 				65D5A6372F6907040006BE42 /* TravelAgent */,
 				65D5A6362F6907040006BE42 /* Products */,
-				65E9158E2F88020600C5B1BE /* ChatAPIService.swift */,
-				65E915902F88021E00C5B1BE /* BookingAPIService.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -128,8 +119,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				65E9158F2F88020700C5B1BE /* ChatAPIService.swift in Sources */,
-				65E915912F88021E00C5B1BE /* BookingAPIService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

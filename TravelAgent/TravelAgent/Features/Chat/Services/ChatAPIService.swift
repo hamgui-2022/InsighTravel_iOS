@@ -15,13 +15,18 @@ final class ChatAPIService {
         self.decoder = decoder
     }
 
-    func requestChat(message: String, sessionID: String, context: String) async throws -> ChatResponse {
+    func requestChat(
+        message: String,
+        sessionID: String,
+        context: String,
+        survey: [String: String]? = nil
+    ) async throws -> ChatResponse {
         var request = URLRequest(url: endpoint)
         request.timeoutInterval = 600
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let requestBody = ChatRequest(message: message, sessionID: sessionID, context: context)
+        let requestBody = ChatRequest(message: message, sessionID: sessionID, context: context, survey: survey)
         let encodedBody = try encoder.encode(requestBody)
         request.httpBody = encodedBody
 
@@ -65,11 +70,13 @@ struct ChatRequest: Codable {
     let message: String
     let sessionID: String
     let context: String
+    let survey: [String: String]?
 
     private enum CodingKeys: String, CodingKey {
         case message
         case sessionID = "session_id"
         case context
+        case survey
     }
 }
 
