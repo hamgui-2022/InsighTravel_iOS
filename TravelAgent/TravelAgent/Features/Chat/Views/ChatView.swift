@@ -313,7 +313,8 @@ struct ChatView: View {
             airlineText: "British Airways · 직항",
             priceText: "₩450,000",
             priceCaptionText: "왕복 기준",
-            buttonTitle: "결과 보기"
+            buttonTitle: "결과 보기",
+            footerHintText: nil
         )
     )
     .padding()
@@ -384,7 +385,8 @@ struct ChatView: View {
                 HotelAmenity(iconName: "fork.knife", title: "조식 포함"),
                 HotelAmenity(iconName: "wifi", title: "초고속 와이파이")
             ],
-            buttonTitle: "다른 호텔 보기"
+            buttonTitle: "다른 호텔 보기",
+            footerHintText: nil
         ),
         onTapCTA: {}
     )

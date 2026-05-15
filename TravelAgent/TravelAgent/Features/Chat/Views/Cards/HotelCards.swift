@@ -15,7 +15,8 @@ struct HotelRecommendationData: Hashable {
     let priceText: String
     let priceCaptionText: String
     let amenities: [HotelAmenity]
-    let buttonTitle: String
+    let buttonTitle: String?
+    let footerHintText: String?
 }
 
 struct HotelRecommendationCard: View {
@@ -33,24 +34,36 @@ struct HotelRecommendationCard: View {
 
             amenitiesSection
 
-            Divider()
-                .padding(.horizontal, 16)
+            if let buttonTitle = data.buttonTitle {
+                Divider()
+                    .padding(.horizontal, 16)
 
-            Button(action: onTapCTA) {
-                HStack(spacing: 8) {
-                    Spacer(minLength: 0)
-                    Text(data.buttonTitle)
-                        .font(.system(size: 16, weight: .semibold))
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 14, weight: .semibold))
-                    Spacer(minLength: 0)
+                Button(action: onTapCTA) {
+                    HStack(spacing: 8) {
+                        Spacer(minLength: 0)
+                        Text(buttonTitle)
+                            .font(.system(size: 16, weight: .semibold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 14, weight: .semibold))
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundStyle(Color.white)
+                    .frame(height: 54)
+                    .background(Color.outgoingBubble)
+                    .clipShape(Capsule())
                 }
-                .foregroundStyle(Color.white)
-                .frame(height: 54)
-                .background(Color.outgoingBubble)
-                .clipShape(Capsule())
+                .padding(16)
+            } else if let hint = data.footerHintText {
+                Divider()
+                    .padding(.horizontal, 16)
+
+                Text(hint)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(16)
             }
-            .padding(16)
         }
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
