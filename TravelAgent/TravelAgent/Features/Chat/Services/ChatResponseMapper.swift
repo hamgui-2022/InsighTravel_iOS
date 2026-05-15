@@ -203,8 +203,9 @@ func hotelSearchCardFrom(response: ChatResponse) -> HotelSearchCardData? {
 
     return HotelSearchCardData(
         title: "\(destination) 숙소 탐색",
-        subtitle: "\(month) 기준으로 숙소 후보를 비교해볼 수 있어요.",
-        buttonTitle: "호텔 결과 보기"
+        subtitle: "\(month) 기준 숙소 후보예요. 예약을 진행하려면 채팅에 \"예약할게\"라고 말씀해주세요.",
+        buttonTitle: "호텔 결과 보기",
+        isInteractive: false
     )
 }
 
@@ -215,8 +216,9 @@ func flightSearchCardFrom(response: ChatResponse) -> FlightSearchCardData? {
 
     return FlightSearchCardData(
         title: "\(destination) 항공권 탐색",
-        subtitle: "조건에 맞는 항공편 후보를 확인할 수 있어요.",
-        buttonTitle: "항공권 보기"
+        subtitle: "조건에 맞는 항공편 후보예요. 예약을 진행하려면 채팅에 \"예약할게\"라고 말씀해주세요.",
+        buttonTitle: "항공권 보기",
+        isInteractive: false
     )
 }
 

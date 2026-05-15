@@ -599,7 +599,8 @@ final class ChatViewModel: ObservableObject {
                 HotelAmenity(iconName: "fork.knife", title: "식사"),
                 HotelAmenity(iconName: "wifi", title: "와이파이")
             ],
-            buttonTitle: "호텔 선택"
+            buttonTitle: card.isInteractive ? "호텔 선택" : nil,
+            footerHintText: card.isInteractive ? nil : "예약을 원하시면 채팅에 \"예약할게\"라고 입력해주세요."
         )
     }
 
@@ -639,7 +640,8 @@ final class ChatViewModel: ObservableObject {
             return firstItem.isRoundtrip == true ? "왕복 기준" : "편도 기준"
         }()
 
-        let buttonTitle: String = {
+        let buttonTitle: String? = {
+            guard card.isInteractive else { return nil }
             if count > 1 {
                 return "이외 \(count - 1)개의 항공권 보기"
             } else if count == 1 {
@@ -648,6 +650,10 @@ final class ChatViewModel: ObservableObject {
                 return card.buttonTitle
             }
         }()
+
+        let footerHintText: String? = card.isInteractive
+            ? nil
+            : "예약을 원하시면 채팅에 \"예약할게\"라고 입력해주세요."
 
         let resultCountText: String = {
             if count > 0 {
@@ -667,7 +673,8 @@ final class ChatViewModel: ObservableObject {
             airlineText: airlineText,
             priceText: priceText,
             priceCaptionText: priceCaptionText,
-            buttonTitle: buttonTitle
+            buttonTitle: buttonTitle,
+            footerHintText: footerHintText
         )
     }
 
@@ -807,9 +814,10 @@ final class ChatViewModel: ObservableObject {
         guard let intent = response.plan?.intent else { return }
 
         switch intent {
-        case "stay_search":
+        case "booking_action", "accommodation_booking":
+            // booking_action 인텐트에서만 booking_store에 데이터가 적재되므로 그때만 prefetch.
+            // booking_type을 응답에서 알 수 없으므로 hotel/flight 양쪽을 모두 시도해 캐시한다.
             await prefetchBookingItems(sessionID: sessionID, type: .hotel)
-        case "flight_search":
             await prefetchBookingItems(sessionID: sessionID, type: .flight)
         default:
             break
