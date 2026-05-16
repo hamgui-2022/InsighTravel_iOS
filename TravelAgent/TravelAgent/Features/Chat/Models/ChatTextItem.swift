@@ -1,6 +1,6 @@
 import Foundation
 
-struct ChatTextItem: Hashable {
+struct ChatTextItem: Hashable, Codable {
     let role: String
     let text: String
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-enum ChatItem: Identifiable, Hashable {
+enum ChatItem: Identifiable, Hashable, Codable {
     case text(ChatTextItem, id: UUID)
     case tripGoal(TripGoalData, id: UUID)
     case plannerSummary(PlannerSummaryData, id: UUID)

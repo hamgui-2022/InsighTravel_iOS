@@ -1,6 +1,6 @@
 import Foundation
 
-struct SurveyAnswers: Hashable {
+struct SurveyAnswers: Hashable, Codable {
     var atmosphere: String?
     var budget: String?
     var priority: String?
