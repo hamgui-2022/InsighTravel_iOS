@@ -291,13 +291,13 @@ struct BookingItemDTO: Decodable {
 struct BookingConfirmationRequest: Encodable {
     let sessionID: String
     let type: BookingItemType
-    let itemID: String?
+    let itemIndex: Int?
     let passengerInfo: PassengerInfoPayload?
 
     enum CodingKeys: String, CodingKey {
         case sessionID = "session_id"
         case type = "booking_type"
-        case itemID = "item_id"
+        case itemIndex = "item_index"
         case passengerInfo = "passenger_info"
     }
 }

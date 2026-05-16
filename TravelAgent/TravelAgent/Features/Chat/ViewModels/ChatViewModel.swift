@@ -33,6 +33,10 @@ final class ChatViewModel: ObservableObject {
     @Published var flightBookingFormData = FlightBookingFormData()
     private var hotelItemsByOptionID: [UUID: HotelBookingItem] = [:]
     private var flightItemsByOptionID: [UUID: FlightBookingItem] = [:]
+    private var hotelIndexByOptionID: [UUID: Int] = [:]
+    private var flightIndexByOptionID: [UUID: Int] = [:]
+    private var selectedHotelIndex: Int?
+    private var selectedFlightIndex: Int?
 
     private let sessionsKey = "chat_sessions"
     private let lastSessionKey = "last_session_id"
@@ -61,6 +65,8 @@ final class ChatViewModel: ObservableObject {
         cachedFlightItems = []
         hotelBookingFormData = HotelBookingFormData()
         flightBookingFormData = FlightBookingFormData()
+        selectedHotelIndex = nil
+        selectedFlightIndex = nil
         surveyAnswersBySession[newSession.id] = SurveyAnswers()
         surveyCurrentIndexBySession[newSession.id] = 0
         surveyAnswers = SurveyAnswers()
@@ -81,6 +87,8 @@ final class ChatViewModel: ObservableObject {
         cachedFlightItems = []
         hotelBookingFormData = HotelBookingFormData()
         flightBookingFormData = FlightBookingFormData()
+        selectedHotelIndex = nil
+        selectedFlightIndex = nil
         surveyAnswers = surveyAnswersBySession[session.id] ?? SurveyAnswers()
         surveyCurrentIndex = surveyCurrentIndexBySession[session.id] ?? 0
         isSurveyTransitioning = false
@@ -483,10 +491,12 @@ final class ChatViewModel: ObservableObject {
     func hotelOptions(from items: [HotelBookingItem]) -> [HotelOption] {
         var options: [HotelOption] = []
         hotelItemsByOptionID = [:]
+        hotelIndexByOptionID = [:]
 
-        for item in items {
+        for (index, item) in items.enumerated() {
             let id = UUID()
             hotelItemsByOptionID[id] = item
+            hotelIndexByOptionID[id] = index
             let ratingText = item.rating.map { String(format: "%.1f", $0) } ?? "--"
             let sourceText = (item.source ?? "BOOKING.COM").uppercased()
             let location = item.address ?? item.destinationKR ?? "위치 정보 없음"
@@ -513,10 +523,12 @@ final class ChatViewModel: ObservableObject {
     func flightOptions(from items: [FlightBookingItem]) -> [FlightOption] {
         var options: [FlightOption] = []
         flightItemsByOptionID = [:]
+        flightIndexByOptionID = [:]
 
-        for item in items {
+        for (index, item) in items.enumerated() {
             let id = UUID()
             flightItemsByOptionID[id] = item
+            flightIndexByOptionID[id] = index
 
             let stopsText: String = {
                 guard let stops = item.stops else { return "정보 없음" }
@@ -554,11 +566,13 @@ final class ChatViewModel: ObservableObject {
 
     func selectHotelOption(_ option: HotelOption) {
         guard let item = hotelItemsByOptionID[option.id] else { return }
+        selectedHotelIndex = hotelIndexByOptionID[option.id]
         bookingFlowState = .hotelForm(item)
     }
 
     func selectFlightOption(_ option: FlightOption) {
         guard let item = flightItemsByOptionID[option.id] else { return }
+        selectedFlightIndex = flightIndexByOptionID[option.id]
         bookingFlowState = .flightForm(item)
     }
 
@@ -780,6 +794,7 @@ final class ChatViewModel: ObservableObject {
         let hotelItem: HotelBookingItem?
         let flightItem: FlightBookingItem?
         let passengerInfo: PassengerInfoPayload
+        let itemIndex: Int
 
         switch bookingFlowState {
         case .hotelReview(let item):
@@ -787,12 +802,14 @@ final class ChatViewModel: ObservableObject {
             hotelItem = item
             flightItem = nil
             passengerInfo = .hotel(hotelBookingFormData.toPassengerInfo())
+            itemIndex = selectedHotelIndex ?? 0
         case .flightReview(let item):
             bookingType = .flight
             flightItem = item
             hotelItem = nil
             let roundtrip = item.isRoundtrip ?? true
             passengerInfo = .flight(flightBookingFormData.toPassengerInfo(isRoundtrip: roundtrip))
+            itemIndex = selectedFlightIndex ?? 0
         default:
             return
         }
@@ -805,7 +822,7 @@ final class ChatViewModel: ObservableObject {
             let request = BookingConfirmationRequest(
                 sessionID: sessionID,
                 type: bookingType,
-                itemID: nil,
+                itemIndex: itemIndex,
                 passengerInfo: passengerInfo
             )
             let response = try await bookingService.confirmBooking(request)
