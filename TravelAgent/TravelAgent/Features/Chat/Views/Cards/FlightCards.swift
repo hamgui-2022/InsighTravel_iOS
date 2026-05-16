@@ -290,7 +290,7 @@ struct FlightResultsSummaryCard: View {
 
 // MARK: - Flight Booking Confirmation Card
 
-struct FlightBookingConfirmationData: Hashable {
+struct FlightBookingConfirmationData: Hashable, Codable {
     let reservationID: String
     let heroImageName: String
     let confirmationBadgeText: String

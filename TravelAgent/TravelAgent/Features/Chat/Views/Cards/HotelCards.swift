@@ -132,7 +132,7 @@ struct HotelRecommendationCard: View {
 
 // MARK: - Hotel Booking Confirmation Card
 
-struct HotelBookingConfirmationData: Hashable {
+struct HotelBookingConfirmationData: Hashable, Codable {
     let reservationID: String
     let imageName: String
     let confirmationBadgeText: String
