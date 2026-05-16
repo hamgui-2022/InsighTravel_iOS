@@ -7,6 +7,7 @@ struct ChatHistorySidebarView: View {
     let onClose: () -> Void
     let onNewChat: () -> Void
     let onSelect: (ChatSession) -> Void
+    let onOpenBookingHistory: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -27,18 +28,35 @@ struct ChatHistorySidebarView: View {
                 }
             }
 
-            Button(action: onNewChat) {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .semibold))
-                    Text("새 여행 계획")
-                        .font(.system(size: 14, weight: .semibold))
+            HStack(spacing: 8) {
+                Button(action: onNewChat) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text("새 여행 계획")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(Color.outgoingBubble)
+                    .clipShape(Capsule())
                 }
-                .foregroundStyle(Color.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(Color.outgoingBubble)
-                .clipShape(Capsule())
+
+                Button(action: onOpenBookingHistory) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "ticket")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text("예약 내역")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundStyle(Color.primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(Color.white)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Color.gray.opacity(0.25), lineWidth: 1))
+                }
             }
 
             Text("최근 여행 기록")
