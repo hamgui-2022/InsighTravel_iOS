@@ -11,19 +11,13 @@ struct SelectedHotelSummaryData: Hashable {
 
 struct HotelBookingFormView: View {
     let selectedHotel: SelectedHotelSummaryData
+    @Binding var formData: HotelBookingFormData
     let onBack: () -> Void
     let onProceedToReview: () -> Void
 
-    @State private var guestName = ""
-    @State private var email = ""
-    @State private var phoneNumber = ""
-    @State private var checkInDate = Date()
-    @State private var checkOutDate = Date().addingTimeInterval(60 * 60 * 24 * 3)
-    @State private var guestCount = 1
-
-    @State private var nightlyRateText = "₩1,200,000"
-    @State private var taxAndFeesText = "₩412,000"
-    @State private var totalPriceText = "₩4,012,000"
+    private let nightlyRateText = "₩1,200,000"
+    private let taxAndFeesText = "₩412,000"
+    private let totalPriceText = "₩4,012,000"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,18 +31,18 @@ struct HotelBookingFormView: View {
                         BookingTextFieldRow(
                             title: "이름",
                             placeholder: "홍길동",
-                            text: $guestName
+                            text: $formData.guestName
                         )
                         BookingTextFieldRow(
                             title: "이메일",
                             placeholder: "example@travel.com",
-                            text: $email,
+                            text: $formData.email,
                             keyboardType: .emailAddress
                         )
                         BookingTextFieldRow(
                             title: "전화번호",
                             placeholder: "+82 10-1234-5678",
-                            text: $phoneNumber,
+                            text: $formData.phoneNumber,
                             keyboardType: .phonePad
                         )
                     }
@@ -56,15 +50,15 @@ struct HotelBookingFormView: View {
                     BookingFormSection(title: "숙박 정보") {
                         BookingDateFieldRow(
                             title: "체크인",
-                            date: $checkInDate
+                            date: $formData.checkInDate
                         )
                         BookingDateFieldRow(
                             title: "체크아웃",
-                            date: $checkOutDate
+                            date: $formData.checkOutDate
                         )
                         GuestCountStepper(
                             title: "투숙 인원",
-                            count: $guestCount
+                            count: $formData.guestCount
                         )
                     }
 

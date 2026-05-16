@@ -29,6 +29,8 @@ final class ChatViewModel: ObservableObject {
 
     @Published private(set) var cachedHotelItems: [HotelBookingItem] = []
     @Published private(set) var cachedFlightItems: [FlightBookingItem] = []
+    @Published var hotelBookingFormData = HotelBookingFormData()
+    @Published var flightBookingFormData = FlightBookingFormData()
     private var hotelItemsByOptionID: [UUID: HotelBookingItem] = [:]
     private var flightItemsByOptionID: [UUID: FlightBookingItem] = [:]
 
@@ -57,6 +59,8 @@ final class ChatViewModel: ObservableObject {
         bookingFlowState = .idle
         cachedHotelItems = []
         cachedFlightItems = []
+        hotelBookingFormData = HotelBookingFormData()
+        flightBookingFormData = FlightBookingFormData()
         surveyAnswersBySession[newSession.id] = SurveyAnswers()
         surveyCurrentIndexBySession[newSession.id] = 0
         surveyAnswers = SurveyAnswers()
@@ -75,6 +79,8 @@ final class ChatViewModel: ObservableObject {
         bookingFlowState = .idle
         cachedHotelItems = []
         cachedFlightItems = []
+        hotelBookingFormData = HotelBookingFormData()
+        flightBookingFormData = FlightBookingFormData()
         surveyAnswers = surveyAnswersBySession[session.id] ?? SurveyAnswers()
         surveyCurrentIndex = surveyCurrentIndexBySession[session.id] ?? 0
         isSurveyTransitioning = false
@@ -773,16 +779,20 @@ final class ChatViewModel: ObservableObject {
         let bookingType: BookingItemType
         let hotelItem: HotelBookingItem?
         let flightItem: FlightBookingItem?
+        let passengerInfo: PassengerInfoPayload
 
         switch bookingFlowState {
         case .hotelReview(let item):
             bookingType = .hotel
             hotelItem = item
             flightItem = nil
+            passengerInfo = .hotel(hotelBookingFormData.toPassengerInfo())
         case .flightReview(let item):
             bookingType = .flight
             flightItem = item
             hotelItem = nil
+            let roundtrip = item.isRoundtrip ?? true
+            passengerInfo = .flight(flightBookingFormData.toPassengerInfo(isRoundtrip: roundtrip))
         default:
             return
         }
@@ -796,7 +806,7 @@ final class ChatViewModel: ObservableObject {
                 sessionID: sessionID,
                 type: bookingType,
                 itemID: nil,
-                details: nil
+                passengerInfo: passengerInfo
             )
             let response = try await bookingService.confirmBooking(request)
 

@@ -252,6 +252,7 @@ struct ChatView: View {
         case .hotelForm(let item):
             HotelBookingFormView(
                 selectedHotel: viewModel.selectedHotelSummaryData(from: item),
+                formData: $viewModel.hotelBookingFormData,
                 onBack: { viewModel.returnToHotelSelection() },
                 onProceedToReview: { viewModel.proceedToHotelReview() }
             )
@@ -269,6 +270,7 @@ struct ChatView: View {
         case .flightForm(let item):
             BookingFormView(
                 selectedFlight: viewModel.selectedFlightSummaryData(from: item),
+                formData: $viewModel.flightBookingFormData,
                 onBack: { viewModel.returnToFlightSelection() },
                 onReviewBooking: { viewModel.proceedToFlightReview() }
             )
@@ -366,18 +368,26 @@ struct ChatView: View {
 }
 
 #Preview("Booking Form") {
-    BookingFormView(
-        selectedFlight: SelectedFlightSummaryData(
-            airlineName: "Aegean Airlines",
-            priceText: "₩450,000",
-            routeText: "LHR → JTR",
-            departureCity: "런던",
-            arrivalCity: "산토리니",
-            durationText: "3시간 40분"
-        ),
-        onBack: {},
-        onReviewBooking: {}
-    )
+    BookingFormPreviewWrapper()
+}
+
+private struct BookingFormPreviewWrapper: View {
+    @State private var formData = FlightBookingFormData()
+    var body: some View {
+        BookingFormView(
+            selectedFlight: SelectedFlightSummaryData(
+                airlineName: "Aegean Airlines",
+                priceText: "₩450,000",
+                routeText: "LHR → JTR",
+                departureCity: "런던",
+                arrivalCity: "산토리니",
+                durationText: "3시간 40분"
+            ),
+            formData: $formData,
+            onBack: {},
+            onReviewBooking: {}
+        )
+    }
 }
 
 #Preview("Hotel Recommendation Card") {
@@ -436,18 +446,26 @@ struct ChatView: View {
 }
 
 #Preview("Hotel Booking Form") {
-    HotelBookingFormView(
-        selectedHotel: SelectedHotelSummaryData(
-            imageName: "Santorini",
-            hotelName: "Grace Santorini",
-            dateRangeText: "10월 12일 - 10월 15일",
-            priceText: "₩1,200,000",
-            priceCaptionText: "/ 1박",
-            locationText: "Imerovigli, Greece"
-        ),
-        onBack: {},
-        onProceedToReview: {}
-    )
+    HotelBookingFormPreviewWrapper()
+}
+
+private struct HotelBookingFormPreviewWrapper: View {
+    @State private var formData = HotelBookingFormData()
+    var body: some View {
+        HotelBookingFormView(
+            selectedHotel: SelectedHotelSummaryData(
+                imageName: "Santorini",
+                hotelName: "Grace Santorini",
+                dateRangeText: "10월 12일 - 10월 15일",
+                priceText: "₩1,200,000",
+                priceCaptionText: "/ 1박",
+                locationText: "Imerovigli, Greece"
+            ),
+            formData: $formData,
+            onBack: {},
+            onProceedToReview: {}
+        )
+    }
 }
 
 #Preview("Hotel Booking Review") {
