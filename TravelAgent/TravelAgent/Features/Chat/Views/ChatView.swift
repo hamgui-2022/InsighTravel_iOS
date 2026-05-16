@@ -17,6 +17,7 @@ struct ChatView: View {
     @State private var messageText = ""
     @State private var isSidebarVisible = false
     @State private var isShowingBookingError = false
+    @State private var isShowingBookingHistory = false
     @StateObject private var viewModel = ChatViewModel()
 
     var body: some View {
@@ -133,7 +134,8 @@ struct ChatView: View {
                     selectedID: viewModel.currentSessionID,
                     onClose: { toggleSidebar(false) },
                     onNewChat: startNewChat,
-                    onSelect: selectHistory
+                    onSelect: selectHistory,
+                    onOpenBookingHistory: openBookingHistory
                 )
                 .frame(width: sidebarWidth)
                 .transition(.move(edge: .leading))
@@ -173,6 +175,9 @@ struct ChatView: View {
         } message: {
             Text(viewModel.bookingErrorText ?? "")
         }
+        .sheet(isPresented: $isShowingBookingHistory) {
+            BookingHistoryView()
+        }
     }
 
     private func sendMessage() {
@@ -210,6 +215,11 @@ struct ChatView: View {
         messageText = ""
         viewModel.createNewSession()
         toggleSidebar(false)
+    }
+
+    private func openBookingHistory() {
+        toggleSidebar(false)
+        isShowingBookingHistory = true
     }
 
     @ViewBuilder
@@ -515,7 +525,8 @@ struct ChatView: View {
         selectedID: nil,
         onClose: {},
         onNewChat: {},
-        onSelect: { _ in }
+        onSelect: { _ in },
+        onOpenBookingHistory: {}
     )
     .frame(width: 300)
 }
