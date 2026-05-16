@@ -296,7 +296,7 @@ struct BookingConfirmationRequest: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case sessionID = "session_id"
-        case type
+        case type = "booking_type"
         case itemID = "item_id"
         case passengerInfo = "passenger_info"
     }
