@@ -34,6 +34,7 @@ final class ChatViewModel: ObservableObject {
 
     private let sessionsKey = "chat_sessions"
     private let lastSessionKey = "last_session_id"
+    private let itemsBySessionKey = "chat_items_by_session"
 
     init() {
         loadSessions()
@@ -216,11 +217,13 @@ final class ChatViewModel: ObservableObject {
     private func appendItem(_ item: ChatItem, sessionID: String) {
         items.append(item)
         itemsBySession[sessionID, default: []].append(item)
+        persistSessions()
     }
 
     private func appendItems(_ newItems: [ChatItem], sessionID: String) {
         items.append(contentsOf: newItems)
         itemsBySession[sessionID, default: []].append(contentsOf: newItems)
+        persistSessions()
     }
 
     private func buildContext(for sessionID: String) -> String {
@@ -282,6 +285,20 @@ final class ChatViewModel: ObservableObject {
             sessions = decoded
         } else {
             sessions = []
+        }
+
+        if let data = UserDefaults.standard.data(forKey: itemsBySessionKey),
+           let decoded = try? JSONDecoder().decode([String: [ChatItem]].self, from: data) {
+            // 진행 중이던 설문 카드는 복원 시 제외 — 설문 진행 상태 자체는 메모리에만 존재하므로
+            // 복원 후엔 동작하지 않는 빈 카드가 되어버린다.
+            itemsBySession = decoded.mapValues { items in
+                items.filter { item in
+                    if case .surveyActive = item { return false }
+                    return true
+                }
+            }
+        } else {
+            itemsBySession = [:]
         }
 
         currentSessionID = UserDefaults.standard.string(forKey: lastSessionKey)
@@ -375,11 +392,15 @@ final class ChatViewModel: ObservableObject {
            let index = items.firstIndex(where: { $0.id == id }) {
             items[index] = newItem
         }
+        persistSessions()
     }
 
     private func persistSessions() {
         if let data = try? JSONEncoder().encode(sessions) {
             UserDefaults.standard.set(data, forKey: sessionsKey)
+        }
+        if let data = try? JSONEncoder().encode(itemsBySession) {
+            UserDefaults.standard.set(data, forKey: itemsBySessionKey)
         }
         UserDefaults.standard.set(currentSessionID, forKey: lastSessionKey)
     }
