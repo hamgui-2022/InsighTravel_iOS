@@ -176,7 +176,9 @@ struct ChatView: View {
             Text(viewModel.bookingErrorText ?? "")
         }
         .sheet(isPresented: $isShowingBookingHistory) {
-            BookingHistoryView()
+            if let sessionID = viewModel.currentSessionID {
+                BookingHistoryView(sessionID: sessionID)
+            }
         }
     }
 
