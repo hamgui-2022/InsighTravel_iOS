@@ -11,19 +11,9 @@ struct SelectedFlightSummaryData: Hashable {
 
 struct BookingFormView: View {
     let selectedFlight: SelectedFlightSummaryData
+    @Binding var formData: FlightBookingFormData
     let onBack: () -> Void
     let onReviewBooking: () -> Void
-
-    @State private var passengerName = ""
-    @State private var birthDate = Date()
-    @State private var nationality = "대한민국"
-    @State private var passportNumber = ""
-    @State private var passportExpiry = Date()
-    @State private var email = ""
-    @State private var phoneNumber = ""
-    @State private var departureDate = Date()
-    @State private var returnDate = Date().addingTimeInterval(60 * 60 * 24 * 7)
-    @State private var passengerCount = 1
 
     private let nationalityOptions = ["대한민국", "일본", "미국", "영국", "프랑스"]
 
@@ -39,25 +29,25 @@ struct BookingFormView: View {
                         BookingTextFieldRow(
                             title: "탑승자 이름",
                             placeholder: "여권과 동일한 이름 입력",
-                            text: $passengerName
+                            text: $formData.passengerName
                         )
                         BookingDateFieldRow(
                             title: "생년월일",
-                            date: $birthDate
+                            date: $formData.birthDate
                         )
                         BookingPickerRow(
                             title: "국적",
-                            selection: $nationality,
+                            selection: $formData.nationality,
                             options: nationalityOptions
                         )
                         BookingTextFieldRow(
                             title: "여권 번호",
                             placeholder: "여권 번호 입력",
-                            text: $passportNumber
+                            text: $formData.passportNumber
                         )
                         BookingDateFieldRow(
                             title: "여권 만료일",
-                            date: $passportExpiry
+                            date: $formData.passportExpiry
                         )
                     }
 
@@ -65,13 +55,13 @@ struct BookingFormView: View {
                         BookingTextFieldRow(
                             title: "이메일",
                             placeholder: "example@travel.com",
-                            text: $email,
+                            text: $formData.email,
                             keyboardType: .emailAddress
                         )
                         BookingTextFieldRow(
                             title: "전화번호",
                             placeholder: "+82 10-1234-5678",
-                            text: $phoneNumber,
+                            text: $formData.phoneNumber,
                             keyboardType: .phonePad
                         )
                     }
@@ -79,15 +69,15 @@ struct BookingFormView: View {
                     BookingFormSection(title: "예약 정보") {
                         BookingDateFieldRow(
                             title: "출발일",
-                            date: $departureDate
+                            date: $formData.departureDate
                         )
                         BookingDateFieldRow(
                             title: "귀국일",
-                            date: $returnDate
+                            date: $formData.returnDate
                         )
                         PassengerCountStepper(
                             title: "탑승 인원",
-                            count: $passengerCount
+                            count: $formData.passengerCount
                         )
                     }
                 }

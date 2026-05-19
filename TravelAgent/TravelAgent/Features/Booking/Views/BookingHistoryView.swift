@@ -1,8 +1,12 @@
 import SwiftUI
 
 struct BookingHistoryView: View {
-    @StateObject private var viewModel = BookingHistoryViewModel()
+    @StateObject private var viewModel: BookingHistoryViewModel
     @Environment(\.dismiss) private var dismiss
+
+    init(sessionID: String) {
+        _viewModel = StateObject(wrappedValue: BookingHistoryViewModel(sessionID: sessionID))
+    }
 
     var body: some View {
         NavigationStack {

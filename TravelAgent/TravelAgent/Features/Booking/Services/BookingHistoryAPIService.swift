@@ -26,9 +26,13 @@ final class BookingHistoryAPIService {
         self.decoder = decoder
     }
 
-    func fetchBookings(tab: BookingHistoryTab) async throws -> [BookingHistoryItem] {
+    func fetchBookings(tab: BookingHistoryTab, sessionID: String) async throws -> [BookingHistoryItem] {
         let path = tab == .active ? "api/bookings" : "api/cancelled-bookings"
-        let url = baseURL.appendingPathComponent(path)
+        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "session_id", value: sessionID)]
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"

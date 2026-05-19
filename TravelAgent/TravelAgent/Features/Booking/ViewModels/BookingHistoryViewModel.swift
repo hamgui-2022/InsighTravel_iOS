@@ -13,8 +13,10 @@ final class BookingHistoryViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let service: BookingHistoryAPIService
+    private let sessionID: String
 
-    init(service: BookingHistoryAPIService = BookingHistoryAPIService()) {
+    init(sessionID: String, service: BookingHistoryAPIService = BookingHistoryAPIService()) {
+        self.sessionID = sessionID
         self.service = service
     }
 
@@ -44,7 +46,7 @@ final class BookingHistoryViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
-            let items = try await service.fetchBookings(tab: tab)
+            let items = try await service.fetchBookings(tab: tab, sessionID: sessionID)
             if tab == .active {
                 activeBookings = items
             } else {
