@@ -29,6 +29,9 @@ struct HotelBookingReviewView: View {
         VStack(spacing: 0) {
             topBar
 
+            BookingStepIndicator(currentStep: .review)
+            Divider()
+
             ScrollView {
                 VStack(spacing: 24) {
                     HotelReviewHeroCard(

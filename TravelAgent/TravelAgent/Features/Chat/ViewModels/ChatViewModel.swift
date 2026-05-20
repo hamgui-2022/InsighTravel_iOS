@@ -430,7 +430,7 @@ final class ChatViewModel: ObservableObject {
 
     var isShowingBookingFlowScreen: Bool {
         switch bookingFlowState {
-        case .hotelForm, .hotelReview, .flightForm, .flightReview, .submitting:
+        case .hotelForm, .hotelReview, .flightForm, .flightReview, .submitting, .flightCompleted, .hotelCompleted:
             return true
         default:
             return false
@@ -456,7 +456,7 @@ final class ChatViewModel: ObservableObject {
 
     func dismissBookingFlowScreen() {
         switch bookingFlowState {
-        case .hotelForm, .hotelReview, .flightForm, .flightReview, .submitting:
+        case .hotelForm, .hotelReview, .flightForm, .flightReview, .submitting, .flightCompleted, .hotelCompleted:
             isPrefetchingBookingItems = false
             bookingFlowState = .idle
         default:
@@ -520,6 +520,17 @@ final class ChatViewModel: ObservableObject {
         return options
     }
 
+    private func flightTags(from item: FlightBookingItem) -> [String] {
+        var tags: [String] = []
+        if let stops = item.stops, !stops.isEmpty { tags.append(stops) }
+        if let isRoundtrip = item.isRoundtrip {
+            tags.append(isRoundtrip ? "왕복" : "편도")
+        }
+        if let cabin = item.cabin, !cabin.isEmpty { tags.append(cabin) }
+        if let baggage = item.baggage, !baggage.isEmpty { tags.append(baggage) }
+        return tags
+    }
+
     func flightOptions(from items: [FlightBookingItem]) -> [FlightOption] {
         var options: [FlightOption] = []
         flightItemsByOptionID = [:]
@@ -535,13 +546,7 @@ final class ChatViewModel: ObservableObject {
                 return stops
             }()
 
-            var tags: [String] = []
-            if let cabin = item.cabin { tags.append(cabin) }
-            if let baggage = item.baggage { tags.append(baggage) }
-            if let isRoundtrip = item.isRoundtrip {
-                tags.append(isRoundtrip ? "왕복" : "편도")
-            }
-
+            var tags: [String] = flightTags(from: item)
             if tags.isEmpty { tags = ["옵션 확인"] }
 
             options.append(
@@ -623,7 +628,8 @@ final class ChatViewModel: ObservableObject {
             routeText: routeText,
             departureCity: item.origin ?? "출발지",
             arrivalCity: item.destination ?? "도착지",
-            durationText: item.duration ?? "--"
+            durationText: item.duration ?? "--",
+            tags: flightTags(from: item)
         )
     }
 
@@ -771,19 +777,24 @@ final class ChatViewModel: ObservableObject {
             }
             return item.depTime ?? "일정 미정"
         }()
+        let isRoundtrip = item.isRoundtrip ?? false
+        let outboundID = response.reservationID ?? "예약 완료"
+        let returnID: String? = isRoundtrip ? "\(outboundID)-R" : nil
 
         return FlightBookingConfirmationData(
-            reservationID: response.reservationID ?? "예약 완료",
+            reservationID: outboundID,
             heroImageName: "Santorini",
             confirmationBadgeText: "예약 확정",
             airlineName: item.airline ?? "항공사",
             routeText: routeText,
             dateText: dateText,
-            passengerText: "성인 1명",
+            passengerText: "성인 \(flightBookingFormData.passengerCount)명",
             totalPaidLabel: "총 결제 금액",
             totalPaidText: item.price ?? "가격 정보 없음",
             paymentInfoText: "세금 포함",
-            paymentMethodText: "카드 결제"
+            paymentMethodText: "카드 결제",
+            tags: flightTags(from: item),
+            returnReservationID: returnID
         )
     }
 
@@ -829,20 +840,28 @@ final class ChatViewModel: ObservableObject {
 
             await MainActor.run {
                 if let item = hotelItem {
+                    let confirmation = hotelConfirmationData(from: item, response: response)
                     appendItem(
                         .text(ChatTextItem(role: "assistant", text: "호텔 예약이 완료되었어요."), id: UUID()),
                         sessionID: sessionID
                     )
-                    appendItem(.hotelBookingConfirmation(hotelConfirmationData(from: item, response: response), id: UUID()), sessionID: sessionID)
+                    appendItem(.hotelBookingConfirmation(confirmation, id: UUID()), sessionID: sessionID)
+                    bookingFlowState = .hotelCompleted(
+                        HotelBookingCompletedPayload(item: item, confirmation: confirmation, form: hotelBookingFormData)
+                    )
                 } else if let item = flightItem {
+                    let confirmation = flightConfirmationData(from: item, response: response)
                     appendItem(
                         .text(ChatTextItem(role: "assistant", text: "항공권 예약이 완료되었어요."), id: UUID()),
                         sessionID: sessionID
                     )
-                    appendItem(.flightBookingConfirmation(flightConfirmationData(from: item, response: response), id: UUID()), sessionID: sessionID)
+                    appendItem(.flightBookingConfirmation(confirmation, id: UUID()), sessionID: sessionID)
+                    bookingFlowState = .flightCompleted(
+                        FlightBookingCompletedPayload(item: item, confirmation: confirmation, form: flightBookingFormData)
+                    )
+                } else {
+                    bookingFlowState = .idle
                 }
-
-                bookingFlowState = .idle
             }
         } catch {
             await MainActor.run {

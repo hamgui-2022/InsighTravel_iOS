@@ -17,6 +17,9 @@ struct FlightBookingReviewView: View {
         VStack(spacing: 0) {
             topBar
 
+            BookingStepIndicator(currentStep: .review)
+            Divider()
+
             ScrollView {
                 VStack(spacing: 24) {
                     SelectedFlightSummaryCard(data: data.summary)

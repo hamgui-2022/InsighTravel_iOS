@@ -10,9 +10,12 @@ struct ChatHeaderView: View {
 
     var body: some View {
         ZStack {
-            Text("InsighTravel")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Color.primary)
+            HStack(spacing: 8) {
+                MascotAvatar(size: .small)
+                Text("InsighTravel")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.primary)
+            }
 
             HStack {
                 Button(action: onMenuTap) {

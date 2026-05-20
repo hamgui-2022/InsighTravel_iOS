@@ -167,7 +167,7 @@ struct FlightOptionCard: View {
 
             Divider()
 
-            tagRow
+            FlightTagRow(tags: option.tags)
         }
         .padding(16)
         .background(Color(white: 0.98))
@@ -266,19 +266,6 @@ struct FlightOptionCard: View {
         .padding(.top, 4)
     }
 
-    private var tagRow: some View {
-        HStack(spacing: 8) {
-            ForEach(option.tags, id: \.self) { tag in
-                Text(tag)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.secondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.gray.opacity(0.15))
-                    .clipShape(Capsule())
-            }
-        }
-    }
 }
 
 private extension FlightOption {
