@@ -225,8 +225,6 @@ func itineraryDataFrom(reply: String) -> ItineraryCardData? {
     var events: [ItineraryEventInfo] = []
     var inEventsSection = false
 
-    let slotPrefixes = ["오전", "오후", "저녁", "아침", "점심", "밤"]
-
     for block in blocks {
         let lines = block
             .components(separatedBy: .newlines)
@@ -237,51 +235,28 @@ func itineraryDataFrom(reply: String) -> ItineraryCardData? {
 
         if firstLine.contains("축제") || firstLine.contains("이벤트") || firstLine.contains("행사") {
             inEventsSection = true
-            let bodyLines = Array(lines.dropFirst())
-            for line in bodyLines {
-                let (title, detail) = splitTitleAndDetail(line)
-                events.append(ItineraryEventInfo(title: title, detail: detail))
+            for line in lines.dropFirst() {
+                events.append(parseEventLine(line))
             }
             continue
         }
 
         if firstLine.hasPrefix("날짜") || firstLine.hasPrefix("날씨") || firstLine.hasPrefix("옷차림") {
-            var dateText: String?
-            var summaryLines: [String] = []
-            var outfitTip: String?
-
-            for line in lines {
-                if let value = stripLabel(line, label: "날짜") {
-                    dateText = value
-                } else if let value = stripLabel(line, label: "날씨") {
-                    summaryLines.append(value)
-                } else if let value = stripLabel(line, label: "옷차림 팁") ?? stripLabel(line, label: "옷차림") {
-                    outfitTip = value
-                } else {
-                    summaryLines.append(line)
-                }
-            }
-
-            weather = ItineraryWeatherInfo(
-                dateText: dateText,
-                summaryLines: summaryLines,
-                outfitTip: outfitTip
-            )
+            weather = parseWeatherBlock(lines: lines)
             continue
         }
 
-        if let slotPrefix = slotPrefixes.first(where: { firstLine.hasPrefix("\($0):") || firstLine.hasPrefix("\($0) ") }) {
+        if let (slotLabel, slotKind, slotTitle) = matchSlotStart(firstLine) {
             inEventsSection = false
-            let title = stripLabel(firstLine, label: slotPrefix) ?? firstLine
             var location: String?
-            var transport: String?
+            var transport: ItineraryTransportInfo?
             var planB: String?
 
             for line in lines.dropFirst() {
                 if let value = stripLabel(line, label: "위치") {
                     location = value
                 } else if let value = stripLabel(line, label: "이동") {
-                    transport = value
+                    transport = parseTransportLine(value)
                 } else if let value = stripLabel(line, label: "플랜B") ?? stripLabel(line, label: "플랜 B") {
                     planB = value
                 }
@@ -289,8 +264,9 @@ func itineraryDataFrom(reply: String) -> ItineraryCardData? {
 
             timeSlots.append(
                 ItineraryTimeSlot(
-                    slot: slotPrefix,
-                    title: title,
+                    slotLabel: slotLabel,
+                    slotKind: slotKind,
+                    title: slotTitle,
                     location: location,
                     transport: transport,
                     planB: planB
@@ -301,8 +277,7 @@ func itineraryDataFrom(reply: String) -> ItineraryCardData? {
 
         if inEventsSection {
             for line in lines {
-                let (title, detail) = splitTitleAndDetail(line)
-                events.append(ItineraryEventInfo(title: title, detail: detail))
+                events.append(parseEventLine(line))
             }
         }
     }
@@ -315,6 +290,219 @@ func itineraryDataFrom(reply: String) -> ItineraryCardData? {
         events: events
     )
 }
+
+// MARK: Slot parsing
+
+private let slotKindMap: [(label: String, kind: ItinerarySlotKind)] = [
+    ("오전", .morning),
+    ("아침", .morning),
+    ("점심", .noon),
+    ("오후", .afternoon),
+    ("저녁", .evening),
+    ("밤", .night)
+]
+
+private func matchSlotStart(_ line: String) -> (label: String, kind: ItinerarySlotKind, title: String)? {
+    // HH:MM 접두사 (예: "10:00 해유관")
+    if let regex = try? NSRegularExpression(pattern: #"^(\d{1,2}:\d{2})\s+(.+)$"#),
+       let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
+       let timeRange = Range(match.range(at: 1), in: line),
+       let titleRange = Range(match.range(at: 2), in: line) {
+        let time = String(line[timeRange])
+        let title = String(line[titleRange]).trimmingCharacters(in: .whitespaces)
+        return (label: time, kind: .timestamp, title: title)
+    }
+
+    // 한국어 시간대 접두사 (예: "오전: 해유관" / "오전 해유관")
+    for entry in slotKindMap {
+        if line.hasPrefix("\(entry.label):") {
+            let title = String(line.dropFirst(entry.label.count + 1)).trimmingCharacters(in: .whitespaces)
+            return (entry.label, entry.kind, title.isEmpty ? line : title)
+        }
+        if line.hasPrefix("\(entry.label) ") {
+            let title = String(line.dropFirst(entry.label.count + 1)).trimmingCharacters(in: .whitespaces)
+            return (entry.label, entry.kind, title.isEmpty ? line : title)
+        }
+    }
+    return nil
+}
+
+// MARK: Transport parsing
+
+func parseTransportLine(_ raw: String) -> ItineraryTransportInfo {
+    let legs = raw
+        .components(separatedBy: " / ")
+        .map { $0.trimmingCharacters(in: .whitespaces) }
+        .filter { !$0.isEmpty }
+
+    var transit: ItineraryTransportLeg?
+    var taxi: ItineraryTransportLeg?
+
+    for leg in legs {
+        let isTransit = leg.hasPrefix("대중교통") || leg.hasPrefix("[대중교통]")
+        let isTaxi = leg.hasPrefix("택시") || leg.hasPrefix("[택시]")
+
+        guard isTransit || isTaxi else { continue }
+
+        let parsed = parseTransportLeg(leg)
+        if isTransit && transit == nil {
+            transit = parsed
+        } else if isTaxi && taxi == nil {
+            taxi = parsed
+        }
+    }
+
+    if transit == nil && taxi == nil {
+        return ItineraryTransportInfo(transit: nil, taxi: nil, fallbackText: raw)
+    }
+    return ItineraryTransportInfo(transit: transit, taxi: taxi, fallbackText: nil)
+}
+
+private func parseTransportLeg(_ leg: String) -> ItineraryTransportLeg {
+    var working = leg
+        .replacingOccurrences(of: "[대중교통]", with: "")
+        .replacingOccurrences(of: "[택시]", with: "")
+    for prefix in ["대중교통", "택시"] {
+        if working.hasPrefix(prefix) {
+            working = String(working.dropFirst(prefix.count))
+        }
+    }
+    working = working.trimmingCharacters(in: .whitespaces)
+
+    // 요금: "예상 요금: 약 3,500엔" 같은 표현을 캡처
+    var costText: String?
+    if let regex = try? NSRegularExpression(pattern: #"예상\s*요금\s*[:：]?\s*([^)]+?)\s*(?=[)］\]]|$)"#),
+       let match = regex.firstMatch(in: working, range: NSRange(working.startIndex..., in: working)),
+       let range = Range(match.range(at: 1), in: working) {
+        costText = String(working[range]).trimmingCharacters(in: .whitespaces)
+    }
+
+    // 소요시간: "총 약 25분" 우선, 없으면 첫 "약 N분"
+    var durationText: String?
+    if let regex = try? NSRegularExpression(pattern: #"총\s*약\s*([0-9]+\s*분)"#),
+       let match = regex.firstMatch(in: working, range: NSRange(working.startIndex..., in: working)),
+       let range = Range(match.range(at: 1), in: working) {
+        durationText = "총 약 " + String(working[range])
+    } else if let regex = try? NSRegularExpression(pattern: #"약\s*([0-9]+\s*분)"#),
+              let match = regex.firstMatch(in: working, range: NSRange(working.startIndex..., in: working)),
+              let range = Range(match.range(at: 1), in: working) {
+        durationText = "약 " + String(working[range])
+    }
+
+    // 본문 설명: 마지막 괄호 블록(요금/소요시간) 제거
+    var description = working
+    if let regex = try? NSRegularExpression(pattern: #"\s*\([^)]*\)\s*$"#) {
+        let range = NSRange(description.startIndex..., in: description)
+        description = regex.stringByReplacingMatches(in: description, range: range, withTemplate: "")
+    }
+    description = description.trimmingCharacters(in: .whitespaces)
+    if description.isEmpty {
+        description = working
+    }
+
+    return ItineraryTransportLeg(
+        description: description,
+        durationText: durationText,
+        costText: costText
+    )
+}
+
+// MARK: Weather parsing
+
+private func parseWeatherBlock(lines: [String]) -> ItineraryWeatherInfo {
+    var dateText: String?
+    var rawWeatherLines: [String] = []
+    var outfitTip: String?
+
+    for line in lines {
+        if let value = stripLabel(line, label: "날짜") {
+            dateText = value
+        } else if let value = stripLabel(line, label: "날씨") {
+            rawWeatherLines.append(value)
+        } else if let value = stripLabel(line, label: "옷차림 팁") ?? stripLabel(line, label: "옷차림") {
+            outfitTip = value
+        } else {
+            rawWeatherLines.append(line)
+        }
+    }
+
+    let combined = rawWeatherLines.joined(separator: ", ")
+    let periods = parseWeatherPeriods(from: combined)
+
+    return ItineraryWeatherInfo(
+        dateText: dateText,
+        periods: periods,
+        fallbackLines: periods.isEmpty ? rawWeatherLines : [],
+        outfitTip: outfitTip
+    )
+}
+
+private func parseWeatherPeriods(from text: String) -> [ItineraryWeatherPeriod] {
+    let pattern = #"(오전|오후|아침|점심|저녁|밤)\s*(\d+)\s*도\s*\(([^)]*)\)"#
+    guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+
+    let range = NSRange(text.startIndex..., in: text)
+    let matches = regex.matches(in: text, range: range)
+
+    var periods: [ItineraryWeatherPeriod] = []
+    for match in matches {
+        guard
+            let labelRange = Range(match.range(at: 1), in: text),
+            let tempRange = Range(match.range(at: 2), in: text),
+            let detailRange = Range(match.range(at: 3), in: text)
+        else { continue }
+
+        let label = String(text[labelRange])
+        let temperatureText = "\(text[tempRange])°"
+        let detail = String(text[detailRange])
+
+        let parts = detail
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+
+        var conditionParts: [String] = []
+        var rainProb: String?
+        for part in parts {
+            if part.contains("강수") {
+                rainProb = part
+            } else if !part.isEmpty {
+                conditionParts.append(part)
+            }
+        }
+
+        periods.append(
+            ItineraryWeatherPeriod(
+                label: label,
+                temperatureText: temperatureText,
+                conditionText: conditionParts.isEmpty ? nil : conditionParts.joined(separator: ", "),
+                rainProbText: rainProb
+            )
+        )
+    }
+    return periods
+}
+
+// MARK: Event parsing
+
+private func parseEventLine(_ line: String) -> ItineraryEventInfo {
+    let (title, detail) = splitTitleAndDetail(line)
+    guard let detail else {
+        return ItineraryEventInfo(title: title, location: nil, period: nil, memo: nil)
+    }
+
+    let parts = detail
+        .components(separatedBy: " / ")
+        .map { $0.trimmingCharacters(in: .whitespaces) }
+        .filter { !$0.isEmpty }
+
+    let location = parts.indices.contains(0) ? parts[0] : nil
+    let period = parts.indices.contains(1) ? parts[1] : nil
+    let memo: String? = parts.count > 2 ? parts[2...].joined(separator: " / ") : nil
+
+    return ItineraryEventInfo(title: title, location: location, period: period, memo: memo)
+}
+
+// MARK: Shared helpers
 
 private func stripLabel(_ line: String, label: String) -> String? {
     let prefix = "\(label):"
