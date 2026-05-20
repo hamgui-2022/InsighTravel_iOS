@@ -73,6 +73,9 @@ struct ChatView: View {
                                             onTapCTA: { viewModel.openFlightSelectionIfAvailable() }
                                         )
 
+                                    case .itinerary(let data, _):
+                                        ItineraryCardView(data: data)
+
                                     case .hotelBookingConfirmation(let data, _):
                                         HotelBookingConfirmedCard(data: data)
 

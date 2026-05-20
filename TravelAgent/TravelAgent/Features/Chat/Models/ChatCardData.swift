@@ -30,3 +30,30 @@ struct FlightSearchCardData: Hashable, Codable {
     let subtitle: String
     let buttonTitle: String
 }
+
+struct ItineraryCardData: Hashable, Codable {
+    let weather: ItineraryWeatherInfo?
+    let timeSlots: [ItineraryTimeSlot]
+    let events: [ItineraryEventInfo]
+}
+
+struct ItineraryWeatherInfo: Hashable, Codable {
+    let dateText: String?
+    let summaryLines: [String]
+    let outfitTip: String?
+}
+
+struct ItineraryTimeSlot: Identifiable, Hashable, Codable {
+    var id = UUID()
+    let slot: String
+    let title: String
+    let location: String?
+    let transport: String?
+    let planB: String?
+}
+
+struct ItineraryEventInfo: Identifiable, Hashable, Codable {
+    var id = UUID()
+    let title: String
+    let detail: String?
+}
