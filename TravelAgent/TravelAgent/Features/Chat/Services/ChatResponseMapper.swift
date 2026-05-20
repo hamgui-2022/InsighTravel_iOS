@@ -5,17 +5,23 @@ import Foundation
 func chatItems(from response: ChatResponse) -> [ChatItem] {
     var items: [ChatItem] = []
 
-    let summarizedReply = summarizeAssistantReply(
-        response.reply,
-        intent: response.plan?.intent
-    )
+    let itineraryCard: ItineraryCardData? = {
+        guard planSignalsItinerary(response.plan) else { return nil }
+        return itineraryDataFrom(reply: response.reply)
+    }()
 
-    items.append(
-        .text(
-            ChatTextItem(role: "assistant", text: summarizedReply),
-            id: UUID()
+    if itineraryCard == nil {
+        let summarizedReply = summarizeAssistantReply(
+            response.reply,
+            intent: response.plan?.intent
         )
-    )
+        items.append(
+            .text(
+                ChatTextItem(role: "assistant", text: summarizedReply),
+                id: UUID()
+            )
+        )
+    }
 
     if let tripGoal = tripGoalFrom(response.tripGoal) {
         items.append(.tripGoal(tripGoal, id: UUID()))
@@ -23,6 +29,10 @@ func chatItems(from response: ChatResponse) -> [ChatItem] {
 
     if let planner = plannerSummaryFrom(response.plan) {
         items.append(.plannerSummary(planner, id: UUID()))
+    }
+
+    if let itineraryCard {
+        items.append(.itinerary(itineraryCard, id: UUID()))
     }
 
     // planner LLM이 intent를 일정형(itinerary_planner)으로 묶어버려도, 백엔드 라우터는 plan.tools[0]만 실행한다.
@@ -190,6 +200,140 @@ func plannerSummaryFrom(_ payload: PlannerPayload?) -> PlannerSummaryData? {
         tripStage: userFacingTripStage(payload.tripStage),
         steps: steps
     )
+}
+
+// MARK: - Itinerary card
+
+func planSignalsItinerary(_ plan: PlannerPayload?) -> Bool {
+    guard let plan else { return false }
+    if plan.intent == "itinerary_planner" { return true }
+    return plan.tools?.first == "itinerary_planner"
+}
+
+func itineraryDataFrom(reply: String) -> ItineraryCardData? {
+    let normalized = reply
+        .replacingOccurrences(of: "\r\n", with: "\n")
+        .replacingOccurrences(of: "\r", with: "\n")
+
+    let blocks = normalized
+        .components(separatedBy: "\n\n")
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+
+    var weather: ItineraryWeatherInfo?
+    var timeSlots: [ItineraryTimeSlot] = []
+    var events: [ItineraryEventInfo] = []
+    var inEventsSection = false
+
+    let slotPrefixes = ["오전", "오후", "저녁", "아침", "점심", "밤"]
+
+    for block in blocks {
+        let lines = block
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        guard let firstLine = lines.first else { continue }
+
+        if firstLine.contains("축제") || firstLine.contains("이벤트") || firstLine.contains("행사") {
+            inEventsSection = true
+            let bodyLines = Array(lines.dropFirst())
+            for line in bodyLines {
+                let (title, detail) = splitTitleAndDetail(line)
+                events.append(ItineraryEventInfo(title: title, detail: detail))
+            }
+            continue
+        }
+
+        if firstLine.hasPrefix("날짜") || firstLine.hasPrefix("날씨") || firstLine.hasPrefix("옷차림") {
+            var dateText: String?
+            var summaryLines: [String] = []
+            var outfitTip: String?
+
+            for line in lines {
+                if let value = stripLabel(line, label: "날짜") {
+                    dateText = value
+                } else if let value = stripLabel(line, label: "날씨") {
+                    summaryLines.append(value)
+                } else if let value = stripLabel(line, label: "옷차림 팁") ?? stripLabel(line, label: "옷차림") {
+                    outfitTip = value
+                } else {
+                    summaryLines.append(line)
+                }
+            }
+
+            weather = ItineraryWeatherInfo(
+                dateText: dateText,
+                summaryLines: summaryLines,
+                outfitTip: outfitTip
+            )
+            continue
+        }
+
+        if let slotPrefix = slotPrefixes.first(where: { firstLine.hasPrefix("\($0):") || firstLine.hasPrefix("\($0) ") }) {
+            inEventsSection = false
+            let title = stripLabel(firstLine, label: slotPrefix) ?? firstLine
+            var location: String?
+            var transport: String?
+            var planB: String?
+
+            for line in lines.dropFirst() {
+                if let value = stripLabel(line, label: "위치") {
+                    location = value
+                } else if let value = stripLabel(line, label: "이동") {
+                    transport = value
+                } else if let value = stripLabel(line, label: "플랜B") ?? stripLabel(line, label: "플랜 B") {
+                    planB = value
+                }
+            }
+
+            timeSlots.append(
+                ItineraryTimeSlot(
+                    slot: slotPrefix,
+                    title: title,
+                    location: location,
+                    transport: transport,
+                    planB: planB
+                )
+            )
+            continue
+        }
+
+        if inEventsSection {
+            for line in lines {
+                let (title, detail) = splitTitleAndDetail(line)
+                events.append(ItineraryEventInfo(title: title, detail: detail))
+            }
+        }
+    }
+
+    guard !timeSlots.isEmpty || weather != nil else { return nil }
+
+    return ItineraryCardData(
+        weather: weather,
+        timeSlots: timeSlots,
+        events: events
+    )
+}
+
+private func stripLabel(_ line: String, label: String) -> String? {
+    let prefix = "\(label):"
+    if line.hasPrefix(prefix) {
+        return String(line.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+    }
+    return nil
+}
+
+private func splitTitleAndDetail(_ line: String) -> (String, String?) {
+    if let colonRange = line.range(of: ":") {
+        let title = String(line[..<colonRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+        let detail = String(line[colonRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+        if title.isEmpty {
+            return (line, nil)
+        }
+        return (title, detail.isEmpty ? nil : detail)
+    }
+    return (line, nil)
 }
 
 // MARK: - Hotel & flight search cards

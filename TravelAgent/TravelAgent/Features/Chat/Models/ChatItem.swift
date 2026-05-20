@@ -6,6 +6,7 @@ enum ChatItem: Identifiable, Hashable, Codable {
     case plannerSummary(PlannerSummaryData, id: UUID)
     case hotelSearch(HotelSearchCardData, id: UUID)
     case flightSearch(FlightSearchCardData, id: UUID)
+    case itinerary(ItineraryCardData, id: UUID)
     case hotelBookingConfirmation(HotelBookingConfirmationData, id: UUID)
     case flightBookingConfirmation(FlightBookingConfirmationData, id: UUID)
     case surveyActive(id: UUID)
@@ -23,6 +24,8 @@ enum ChatItem: Identifiable, Hashable, Codable {
         case .hotelSearch(_, let id):
             return id
         case .flightSearch(_, let id):
+            return id
+        case .itinerary(_, let id):
             return id
         case .hotelBookingConfirmation(_, let id):
             return id
