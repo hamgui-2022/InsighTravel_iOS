@@ -5,7 +5,9 @@ struct SurveyCompletedCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("설문이 완료됐어요! 🎉")
+            (Text("설문이 완료됐어요! ")
+                + Text(Image(systemName: "party.popper.fill"))
+                    .foregroundColor(Color(red: 0.95, green: 0.55, blue: 0.20)))
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.chatText)
 
