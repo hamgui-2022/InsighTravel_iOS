@@ -39,21 +39,55 @@ struct ItineraryCardData: Hashable, Codable {
 
 struct ItineraryWeatherInfo: Hashable, Codable {
     let dateText: String?
-    let summaryLines: [String]
+    let periods: [ItineraryWeatherPeriod]
+    let fallbackLines: [String]
     let outfitTip: String?
+}
+
+struct ItineraryWeatherPeriod: Identifiable, Hashable, Codable {
+    var id = UUID()
+    let label: String
+    let temperatureText: String?
+    let conditionText: String?
+    let rainProbText: String?
 }
 
 struct ItineraryTimeSlot: Identifiable, Hashable, Codable {
     var id = UUID()
-    let slot: String
+    let slotLabel: String
+    let slotKind: ItinerarySlotKind
     let title: String
     let location: String?
-    let transport: String?
+    let transport: ItineraryTransportInfo?
     let planB: String?
+}
+
+enum ItinerarySlotKind: String, Codable, Hashable {
+    case morning
+    case noon
+    case afternoon
+    case evening
+    case night
+    case timestamp
+    case other
+}
+
+struct ItineraryTransportInfo: Hashable, Codable {
+    let transit: ItineraryTransportLeg?
+    let taxi: ItineraryTransportLeg?
+    let fallbackText: String?
+}
+
+struct ItineraryTransportLeg: Hashable, Codable {
+    let description: String
+    let durationText: String?
+    let costText: String?
 }
 
 struct ItineraryEventInfo: Identifiable, Hashable, Codable {
     var id = UUID()
     let title: String
-    let detail: String?
+    let location: String?
+    let period: String?
+    let memo: String?
 }

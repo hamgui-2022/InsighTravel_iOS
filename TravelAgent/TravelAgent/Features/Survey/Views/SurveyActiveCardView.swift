@@ -9,9 +9,16 @@ struct SurveyActiveCardView: View {
     var body: some View {
         let safeIndex = min(max(currentIndex, 0), SURVEY_QUESTIONS.count - 1)
         let question = SURVEY_QUESTIONS[safeIndex]
+        cardContent(question: question, safeIndex: safeIndex)
+    }
 
+    @ViewBuilder
+    private func cardContent(question: SurveyQuestion, safeIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("안녕하세요 😊 여행을 더 잘 도와드리기 위해\n간단한 질문 4가지에 먼저 답해주세요!")
+            (Text("안녕하세요 ")
+                + Text(Image(systemName: "face.smiling.fill"))
+                    .foregroundColor(Color(red: 0.98, green: 0.78, blue: 0.20))
+                + Text(" 여행을 더 잘 도와드리기 위해\n간단한 질문 4가지에 먼저 답해주세요!"))
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.chatText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -37,7 +44,11 @@ struct SurveyActiveCardView: View {
                     Button {
                         onSelectOption(option.value)
                     } label: {
-                        HStack {
+                        HStack(spacing: 10) {
+                            Image(systemName: option.icon)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(isSelected ? Color.surveyOptionSelectedText : Color.surveyDotActive)
+                                .frame(width: 20)
                             Text(option.label)
                                 .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                                 .foregroundStyle(isSelected ? Color.surveyOptionSelectedText : Color(white: 0.27))
@@ -63,8 +74,19 @@ struct SurveyActiveCardView: View {
         .padding(.vertical, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white)
+            ZStack(alignment: .center) {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white)
+                Image("InsighTravelMascot")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 240, height: 240)
+                    .opacity(0.22)
+                    .offset(x: 50)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
