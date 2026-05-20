@@ -7,6 +7,7 @@ struct SelectedFlightSummaryData: Hashable {
     let departureCity: String
     let arrivalCity: String
     let durationText: String
+    var tags: [String] = []
 }
 
 struct BookingFormView: View {
@@ -17,12 +18,26 @@ struct BookingFormView: View {
 
     private let nationalityOptions = ["대한민국", "일본", "미국", "영국", "프랑스"]
 
+    private var journeyChips: [BookingJourneyChip] {
+        [
+            BookingJourneyChip(iconName: "mappin.and.ellipse", text: "\(selectedFlight.departureCity) → \(selectedFlight.arrivalCity)"),
+            BookingJourneyChip(iconName: "calendar", text: BookingDisplayFormatter.range(from: formData.departureDate, to: formData.returnDate)),
+            BookingJourneyChip(iconName: "person.2.fill", text: "성인 \(formData.passengerCount)명")
+        ]
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             topBar
 
+            BookingStepIndicator(currentStep: .form)
+            Divider()
+
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 20) {
+                    BookingJourneySummaryChips(chips: journeyChips)
+                        .padding(.top, 12)
+
                     SelectedFlightSummaryCard(data: selectedFlight)
 
                     BookingFormSection(title: "탑승자 정보") {
@@ -188,6 +203,10 @@ struct SelectedFlightSummaryCard: View {
                 Text(data.priceText)
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(Color.primary)
+            }
+
+            if !data.tags.isEmpty {
+                FlightTagRow(tags: data.tags)
             }
         }
         .padding(16)

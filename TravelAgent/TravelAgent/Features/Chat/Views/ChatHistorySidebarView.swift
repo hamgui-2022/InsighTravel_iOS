@@ -11,7 +11,8 @@ struct ChatHistorySidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
+            HStack(spacing: 10) {
+                MascotAvatar(size: .small)
                 Text("InsighTravel")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(Color.primary)

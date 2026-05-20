@@ -8,8 +8,13 @@ struct MessageBubbleView: View {
     let isOutgoing: Bool
 
     var body: some View {
-        HStack {
-            if isOutgoing { Spacer(minLength: 40) }
+        HStack(alignment: .bottom, spacing: 8) {
+            if isOutgoing {
+                Spacer(minLength: 40)
+            } else {
+                MascotAvatar(size: .medium)
+            }
+
             Text(text)
                 .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(isOutgoing ? Color.white : Color.chatText)
@@ -18,6 +23,7 @@ struct MessageBubbleView: View {
                 .background(isOutgoing ? Color.outgoingBubble : Color.incomingBubble)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .frame(maxWidth: 260, alignment: isOutgoing ? .trailing : .leading)
+
             if !isOutgoing { Spacer(minLength: 40) }
         }
     }

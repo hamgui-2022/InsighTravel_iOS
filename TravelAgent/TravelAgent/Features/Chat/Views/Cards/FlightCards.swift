@@ -302,6 +302,8 @@ struct FlightBookingConfirmationData: Hashable, Codable {
     let totalPaidText: String
     let paymentInfoText: String
     let paymentMethodText: String
+    var tags: [String]? = nil
+    var returnReservationID: String? = nil
 }
 
 struct FlightBookingConfirmedCard: View {
@@ -404,6 +406,10 @@ struct FlightBookingConfirmedCard: View {
                 Text(data.passengerText)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Color.secondary)
+
+                if let tags = data.tags, !tags.isEmpty {
+                    FlightTagRow(tags: tags)
+                }
 
                 Divider()
 

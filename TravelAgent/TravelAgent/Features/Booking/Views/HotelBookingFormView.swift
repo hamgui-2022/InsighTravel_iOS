@@ -19,12 +19,26 @@ struct HotelBookingFormView: View {
     private let taxAndFeesText = "₩412,000"
     private let totalPriceText = "₩4,012,000"
 
+    private var journeyChips: [BookingJourneyChip] {
+        [
+            BookingJourneyChip(iconName: "mappin.and.ellipse", text: selectedHotel.locationText),
+            BookingJourneyChip(iconName: "calendar", text: BookingDisplayFormatter.range(from: formData.checkInDate, to: formData.checkOutDate)),
+            BookingJourneyChip(iconName: "person.2.fill", text: "성인 \(formData.guestCount)명")
+        ]
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             topBar
 
+            BookingStepIndicator(currentStep: .form)
+            Divider()
+
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 20) {
+                    BookingJourneySummaryChips(chips: journeyChips)
+                        .padding(.top, 12)
+
                     SelectedHotelSummaryCard(data: selectedHotel)
 
                     BookingFormSection(title: "투숙객 정보") {

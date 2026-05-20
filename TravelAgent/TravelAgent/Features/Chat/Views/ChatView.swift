@@ -32,7 +32,9 @@ struct ChatView: View {
                     ScrollView {
                         VStack(spacing: 16) {
                             if viewModel.items.isEmpty {
-                                VStack(spacing: 8) {
+                                VStack(spacing: 16) {
+                                    MascotAvatar(size: .large, showsRing: true)
+                                        .padding(.bottom, 4)
                                     Text("여행을 어디로 떠나볼까요?")
                                         .font(.system(size: 20, weight: .semibold))
                                         .foregroundStyle(Color.primary)
@@ -43,6 +45,7 @@ struct ChatView: View {
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .padding(.horizontal, 32)
+                                .padding(.top, 60)
                             } else {
                                 ForEach(viewModel.items) { item in
                                     switch item {
@@ -286,6 +289,16 @@ struct ChatView: View {
             )
         case .submitting:
             BookingSubmittingView()
+        case .flightCompleted(let payload):
+            FlightBookingCompletedView(
+                payload: payload,
+                onDismiss: { viewModel.dismissBookingFlowScreen() }
+            )
+        case .hotelCompleted(let payload):
+            HotelBookingCompletedView(
+                payload: payload,
+                onDismiss: { viewModel.dismissBookingFlowScreen() }
+            )
         default:
             EmptyView()
         }
