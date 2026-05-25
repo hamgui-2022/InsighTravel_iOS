@@ -610,12 +610,21 @@ final class ChatViewModel: ObservableObject {
     }
 
     func selectedHotelSummaryData(from item: HotelBookingItem) -> SelectedHotelSummaryData {
-        SelectedHotelSummaryData(
+        // 폼에서 입력한 체크인/체크아웃 날짜를 그대로 카드에 노출한다.
+        // priceText 는 1박 기준 단가, dateRangeText 는 "M월 d일 - M월 d일" 형식.
+        let nights = BookingPriceCalculator.nights(
+            from: hotelBookingFormData.checkInDate,
+            to: hotelBookingFormData.checkOutDate
+        )
+        return SelectedHotelSummaryData(
             imageName: "Santorini",
             hotelName: item.name ?? "호텔",
-            dateRangeText: "일정 미정",
+            dateRangeText: BookingDisplayFormatter.range(
+                from: hotelBookingFormData.checkInDate,
+                to: hotelBookingFormData.checkOutDate
+            ),
             priceText: item.price ?? "가격 정보 없음",
-            priceCaptionText: "/ 1박",
+            priceCaptionText: "/ \(nights)박 기준",
             locationText: item.address ?? item.destinationKR ?? "위치 정보 없음"
         )
     }
@@ -719,65 +728,99 @@ final class ChatViewModel: ObservableObject {
     }
 
     func hotelReviewData(from item: HotelBookingItem) -> HotelBookingReviewData {
-        HotelBookingReviewData(
+        // 폼에서 사용자가 입력한 체크인/체크아웃·인원·박수 기반으로 검토 화면을 구성.
+        // 합계는 1박 단가 × 박수 + 10% 세금/수수료 (BookingPriceCalculator).
+        let form = hotelBookingFormData
+        let breakdown = BookingPriceCalculator.hotelBreakdown(
+            unitPriceText: item.price,
+            checkIn: form.checkInDate,
+            checkOut: form.checkOutDate
+        )
+        let unitFallback = item.price ?? "가격 정보 없음"
+        return HotelBookingReviewData(
             hotelName: item.name ?? "호텔",
             hotelDisplayName: item.name ?? "호텔 예약",
             hotelImageName: "Santorini",
             locationText: item.address ?? item.destinationKR ?? "위치 정보 없음",
             availabilityBadgeText: "예약 가능 확인됨",
-            checkInDate: "체크인 일정 미정",
+            checkInDate: BookingDisplayFormatter.mediumKR.string(from: form.checkInDate),
             checkInNote: "오후 2:00 이후",
-            checkOutDate: "체크아웃 일정 미정",
+            checkOutDate: BookingDisplayFormatter.mediumKR.string(from: form.checkOutDate),
             checkOutNote: "오전 11:00 이전",
-            guestSummaryText: "성인 1명",
-            totalPriceText: item.price ?? "가격 정보 없음",
-            nightCountText: "/ 1박",
+            guestSummaryText: "성인 \(form.guestCount)명",
+            totalPriceText: breakdown.totalPriceText(fallback: unitFallback),
+            nightCountText: breakdown.nightCountText,
             trustBadgeText: "안심 예약",
             cancellationPolicyText: "예약 확정 전에는 무료 취소가 가능합니다. 확정 후에는 숙소 정책을 따릅니다."
         )
     }
 
     func flightReviewData(from item: FlightBookingItem) -> FlightBookingReviewData {
+        // 폼에서 입력한 출발/귀국일과 인원을 검토 화면에 그대로 반영한다.
+        // 총 결제 금액은 1인 단가 × 인원 + 10% 세금/수수료.
+        let form = flightBookingFormData
         let routeText = "\(item.origin ?? "출발지") → \(item.destination ?? "도착지")"
+        let isRoundtrip = item.isRoundtrip ?? false
         let dateText: String = {
-            if let dep = item.depTime, let ret = item.retDepTime {
-                return "\(dep) - \(ret)"
+            if isRoundtrip {
+                return BookingDisplayFormatter.range(from: form.departureDate, to: form.returnDate)
             }
-            return item.depTime ?? "일정 미정"
+            return BookingDisplayFormatter.mediumKR.string(from: form.departureDate)
         }()
+        let breakdown = BookingPriceCalculator.flightBreakdown(
+            unitPriceText: item.price,
+            passengerCount: form.passengerCount
+        )
+        let unitFallback = item.price ?? "가격 정보 없음"
 
         return FlightBookingReviewData(
             summary: selectedFlightSummaryData(from: item),
             routeText: routeText,
             dateText: dateText,
-            passengerText: "성인 1명",
-            totalPriceText: item.price ?? "가격 정보 없음"
+            passengerText: "성인 \(form.passengerCount)명",
+            totalPriceText: breakdown.totalPriceText(fallback: unitFallback)
         )
     }
 
     func hotelConfirmationData(from item: HotelBookingItem, response: BookingConfirmationResponse) -> HotelBookingConfirmationData {
-        HotelBookingConfirmationData(
+        // 결제 완료 카드는 폼 입력 기반의 일정과 총 결제 금액(1박×박수+세금)을 보여준다.
+        let form = hotelBookingFormData
+        let breakdown = BookingPriceCalculator.hotelBreakdown(
+            unitPriceText: item.price,
+            checkIn: form.checkInDate,
+            checkOut: form.checkOutDate
+        )
+        let unitFallback = item.price ?? "가격 정보 없음"
+        let stayDateText = "\(BookingDisplayFormatter.range(from: form.checkInDate, to: form.checkOutDate)) · \(breakdown.nights)박"
+        return HotelBookingConfirmationData(
             reservationID: response.reservationID ?? "예약 완료",
             imageName: "Santorini",
             confirmationBadgeText: "예약 확정",
             hotelName: item.name ?? "호텔",
-            stayDateText: "일정 미정",
+            stayDateText: stayDateText,
             totalPaidLabel: "총 결제 금액",
-            totalPaidText: item.price ?? "가격 정보 없음",
+            totalPaidText: breakdown.totalPriceText(fallback: unitFallback),
             paymentInfoText: "세금 포함",
             paymentMethodText: "카드 결제"
         )
     }
 
     func flightConfirmationData(from item: FlightBookingItem, response: BookingConfirmationResponse) -> FlightBookingConfirmationData {
+        // 결제 완료 화면도 인원수만큼 합산한 총액과 폼의 일정으로 표시한다.
+        let form = flightBookingFormData
         let routeText = "\(item.origin ?? "출발지") → \(item.destination ?? "도착지")"
-        let dateText: String = {
-            if let dep = item.depTime, let ret = item.retDepTime {
-                return "\(dep) - \(ret)"
-            }
-            return item.depTime ?? "일정 미정"
-        }()
         let isRoundtrip = item.isRoundtrip ?? false
+        let dateText: String = {
+            if isRoundtrip {
+                return BookingDisplayFormatter.range(from: form.departureDate, to: form.returnDate)
+            }
+            return BookingDisplayFormatter.mediumKR.string(from: form.departureDate)
+        }()
+        let breakdown = BookingPriceCalculator.flightBreakdown(
+            unitPriceText: item.price,
+            passengerCount: form.passengerCount
+        )
+        let unitFallback = item.price ?? "가격 정보 없음"
         let outboundID = response.reservationID ?? "예약 완료"
         let returnID: String? = isRoundtrip ? "\(outboundID)-R" : nil
 
@@ -788,9 +831,9 @@ final class ChatViewModel: ObservableObject {
             airlineName: item.airline ?? "항공사",
             routeText: routeText,
             dateText: dateText,
-            passengerText: "성인 \(flightBookingFormData.passengerCount)명",
+            passengerText: "성인 \(form.passengerCount)명",
             totalPaidLabel: "총 결제 금액",
-            totalPaidText: item.price ?? "가격 정보 없음",
+            totalPaidText: breakdown.totalPriceText(fallback: unitFallback),
             paymentInfoText: "세금 포함",
             paymentMethodText: "카드 결제",
             tags: flightTags(from: item),

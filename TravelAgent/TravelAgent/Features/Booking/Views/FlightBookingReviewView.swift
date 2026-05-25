@@ -25,9 +25,9 @@ struct FlightBookingReviewView: View {
                     SelectedFlightSummaryCard(data: data.summary)
 
                     HotelPriceTotalCard(
-                        totalLabel: "총 결제 금액",
+                        totalLabel: "총 결제 금액 (세금 포함)",
                         totalPriceText: data.totalPriceText,
-                        nightCountText: "왕복 기준",
+                        nightCountText: data.passengerText,
                         trustBadgeText: "안심 예약"
                     )
 

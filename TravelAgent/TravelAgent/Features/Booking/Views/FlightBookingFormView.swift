@@ -18,6 +18,18 @@ struct BookingFormView: View {
 
     private let nationalityOptions = ["대한민국", "일본", "미국", "영국", "프랑스"]
 
+    /// 1인 단가(`selectedFlight.priceText`) × 인원 + 10% 세금으로 합계를 계산.
+    private var priceBreakdown: BookingPriceCalculator.FlightBreakdown {
+        BookingPriceCalculator.flightBreakdown(
+            unitPriceText: selectedFlight.priceText,
+            passengerCount: formData.passengerCount
+        )
+    }
+
+    private var totalPriceText: String {
+        priceBreakdown.totalPriceText(fallback: selectedFlight.priceText)
+    }
+
     private var journeyChips: [BookingJourneyChip] {
         [
             BookingJourneyChip(iconName: "mappin.and.ellipse", text: "\(selectedFlight.departureCity) → \(selectedFlight.arrivalCity)"),
@@ -140,7 +152,7 @@ struct BookingFormView: View {
     private var bookingCTA: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("총 예상 금액 \(selectedFlight.priceText)")
+                Text("총 예상 금액 \(totalPriceText) (성인 \(formData.passengerCount)명)")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.secondary)
                 Spacer(minLength: 0)

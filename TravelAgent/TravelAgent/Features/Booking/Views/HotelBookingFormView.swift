@@ -15,9 +15,21 @@ struct HotelBookingFormView: View {
     let onBack: () -> Void
     let onProceedToReview: () -> Void
 
-    private let nightlyRateText = "₩1,200,000"
-    private let taxAndFeesText = "₩412,000"
-    private let totalPriceText = "₩4,012,000"
+    /// 선택된 호텔의 1박 단가를 기준으로 박수·세금까지 곱해 계산한 결과.
+    /// 단가 파싱이 실패하면 selectedHotel.priceText 를 그대로 fallback 으로 사용한다.
+    private var priceBreakdown: BookingPriceCalculator.HotelBreakdown {
+        BookingPriceCalculator.hotelBreakdown(
+            unitPriceText: selectedHotel.priceText,
+            checkIn: formData.checkInDate,
+            checkOut: formData.checkOutDate
+        )
+    }
+
+    private var nightlyRateText: String { selectedHotel.priceText }
+    private var nightsLineText: String { priceBreakdown.nightsLineText }
+    private var nightsPriceText: String { priceBreakdown.nightsPriceText(fallback: selectedHotel.priceText) }
+    private var taxAndFeesText: String { priceBreakdown.taxPriceText(fallback: "세금 별도") }
+    private var totalPriceText: String { priceBreakdown.totalPriceText(fallback: selectedHotel.priceText) }
 
     private var journeyChips: [BookingJourneyChip] {
         [
@@ -77,8 +89,8 @@ struct HotelBookingFormView: View {
                     }
 
                     HotelPriceSummaryCard(
-                        nightsText: "3박 × \(nightlyRateText)",
-                        nightsPriceText: "₩3,600,000",
+                        nightsText: nightsLineText,
+                        nightsPriceText: nightsPriceText,
                         taxText: "세금 및 수수료",
                         taxPriceText: taxAndFeesText,
                         totalText: "총 금액",
